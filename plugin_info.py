@@ -7,5 +7,6 @@ author = 'Sébastien Weber'
 author_email = 'sebastien.weber@cemes.fr'
 
 #packages required for your plugin:
-packages_required = []
+packages_required = ['phconvert',
+                     'fast_histogram']
 ##

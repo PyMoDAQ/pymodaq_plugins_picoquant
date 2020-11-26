@@ -17,24 +17,22 @@ from pymodaq.daq_utils.h5modules import H5Saver
 
 from pyqtgraph.parametertree import Parameter, ParameterTree
 import pyqtgraph.parametertree.parameterTypes as pTypes
-import pymodaq.daq_utils.custom_parameter_tree as customparameter
+import pymodaq.daq_utils.parameter.pymodaq_ptypes
+from pymodaq.daq_utils.parameter import utils as putils
+from pymodaq.daq_utils.parameter import ioxml
 
 from enum import IntEnum
 import ctypes
 from pymodaq.daq_viewer.utility_classes import comon_parameters
-from pymodaq_plugins.hardware.picoquant import timeharp260
+from ...hardware.picoquant import timeharp260
 from pymodaq.daq_utils.daq_utils import get_set_local_dir
 local_path = get_set_local_dir()
 import tables
-try:
-    from phconvert import pqreader
-except:
-    pass
+from phconvert import pqreader
 
 import time
 import datetime
 from fast_histogram import histogram1d
-
 
 class DAQ_1DViewer_TH260(DAQ_Viewer_base):
     """
@@ -747,7 +745,7 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
         self.h5saver = H5Saver(save_type='custom')
         self.h5saver.init_file(update_h5=False, custom_naming=True,
                                addhoc_file_path=os.path.join(curr_dir, f'{file}.h5'),
-                               metadata=dict(settings=customparameter.parameter_to_xml_string(self.settings),
+                               metadata=dict(settings=ioxml.parameter_to_xml_string(self.settings),
                                              format_name='timestamps'))
         self.settings.child('acquisition', 'temp_file').setValue(f'{file}.h5')
         self.marker_array = self.h5saver.add_array(self.h5saver.raw_group, 'markers', 'data', data_dimension='1D',
@@ -759,7 +757,7 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
 
         # #self.h5file = tables.open_file(os.path.join(curr_dir, file+'.h5'), mode='w')
         # h5group = self.h5file.root
-        # h5group._v_attrs['settings'] = customparameter.parameter_to_xml_string(self.settings)
+        # h5group._v_attrs['settings'] = ioxml.parameter_to_xml_string(self.settings)
         # h5group._v_attrs.type = 'detector'
         # h5group._v_attrs['format_name'] = 'timestamps'
         #

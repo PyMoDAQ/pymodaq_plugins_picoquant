@@ -12,10 +12,7 @@ from pymodaq.daq_utils.daq_utils import winfunc, cfunc
 from typing import TypeVar, Iterable, Tuple, List
 from bitstring import BitArray, Bits
 import numpy as np
-
-__author__ = "Sébastien Weber"
-__status__ = "alpha"
-__version__ = "0.1"
+from pathlib import Path
 
 import sys
 is_64bits = sys.maxsize > 2**32
@@ -97,24 +94,29 @@ def errorstring(value):
     except:
         raise IOError('{}: Unkown error code return'.format(value))
 
+libpath = Path("C:\\Program Files\\PicoQuant\\TimeHarp260-TH260Libv31")
+
+if platform.system() == "Windows":
+    if is_64bits:
+        libname = "th260lib64.dll"
+    else:
+        libname = "th260lib.dll"
+else:
+    raise OSError('Only supported on windows')
+
+_dll = windll.LoadLibrary(libname)
+
 
 class Th260(object):
     """
     Wrapper object around the TH260LIB dll from Picoquant Timeharp 260
     """
     def __init__(self):
-        super(Th260, self).__init__()
+        super().__init__()
 
-        libpath = os.path.dirname(__file__)
-        if platform.system() == "Windows":
-            if is_64bits:
-                libname = os.path.join(libpath, "th260lib64.dll")
-            else:
-                libname = os.path.join(libpath, "th260lib.dll")
-        else:
-            raise OSError('Only supported on windows')
 
-        self._dll = windll.LoadLibrary(libname)
+
+
         self.create_prototypes()
         self.histogram_length = 0 #to get/set with self.TH260_SetHistoLen
         self.Nchannels = 0 #is set within self.TH260_GetNumOfInputChannels
@@ -212,7 +214,7 @@ class Th260(object):
         modelp = create_string_buffer(16)
         partp = create_string_buffer(8)
         versionp = create_string_buffer(16)
-        res = self._dll.TH260_GetHardwareInfo(device, byref(modelp), byref(partp), byref(versionp))
+        res = _dll.TH260_GetHardwareInfo(device, byref(modelp), byref(partp), byref(versionp))
 
         if res == 0:
             return modelp.value.decode(), partp.value.decode(), versionp.value.decode()
@@ -608,7 +610,7 @@ class Th260(object):
         The histogram buffer size actuallen must correspond to the value obtained through TH260_SetHistoLen().
         The maximum input channel index must correspond to nchannels-1 as obtained through TH260_GetNumOfInputChannels().
         """
-        res = self._dll.TH260_GetHistogram(device, data_pointer, channel, c_int(clear))
+        res = _dll.TH260_GetHistogram(device, data_pointer, channel, c_int(clear))
         if res != 0:
             raise IOError(ErrorCodes(res).name)
 
@@ -773,7 +775,7 @@ class Th260(object):
          """
         text = create_string_buffer(16384)
 
-        res = self._dll.TH260_GetWarningsText(device, byref(text), warnings)
+        res = _dll.TH260_GetWarningsText(device, byref(text), warnings)
         if res == 0:
             return text.value.decode()
         else:
@@ -893,218 +895,218 @@ class Th260(object):
         Declaring functions from the dll with appropriate arguments to ovoid crashing
         """
         # extern int _stdcall TH260_GetLibraryVersion(char* version);
-        self._TH260_GetLibraryVersion = winfunc('TH260_GetLibraryVersion', self._dll, c_int, ('vers', c_char_p, 1))
+        self._TH260_GetLibraryVersion = winfunc('TH260_GetLibraryVersion', _dll, c_int, ('vers', c_char_p, 1))
 
         # extern int _stdcall TH260_GetErrorString(char* errstring, int errcode);
-        self._TH260_GetErrorString = winfunc('TH260_GetErrorString', self._dll, c_int, ('errstring', c_char_p, 1),
+        self._TH260_GetErrorString = winfunc('TH260_GetErrorString', _dll, c_int, ('errstring', c_char_p, 1),
                                              ('errcode', c_int, 1))
 
         # extern int _stdcall TH260_OpenDevice(int devidx, char* serial);
-        self._TH260_OpenDevice = winfunc('TH260_OpenDevice', self._dll, c_int, ('devidx', c_int, 1, 0),
+        self._TH260_OpenDevice = winfunc('TH260_OpenDevice', _dll, c_int, ('devidx', c_int, 1, 0),
                                          ('serial', c_char_p, 1))
 
         # extern int _stdcall TH260_CloseDevice(int devidx);
-        self._TH260_CloseDevice = winfunc('TH260_CloseDevice', self._dll, c_int, ('devidx', c_int, 1, 0))
+        self._TH260_CloseDevice = winfunc('TH260_CloseDevice', _dll, c_int, ('devidx', c_int, 1, 0))
 
         # extern int _stdcall TH260_Initialize(int devidx, int mode);
-        self._TH260_Initialize = winfunc('TH260_Initialize', self._dll, c_int, ('devidx', c_int, 1, 0),
+        self._TH260_Initialize = winfunc('TH260_Initialize', _dll, c_int, ('devidx', c_int, 1, 0),
                                          ('mode', c_int, 1, 0))
 
         # //all functions below can only be used after TH260_Initialize
         # extern int _stdcall TH260_GetHardwareInfo(int devidx, char* model, char* partno, char* version);
-        self._TH260_GetHardwareInfo = winfunc('TH260_GetHardwareInfo', self._dll, c_int, ('devidx', c_int, 1, 0),
+        self._TH260_GetHardwareInfo = winfunc('TH260_GetHardwareInfo', _dll, c_int, ('devidx', c_int, 1, 0),
                                               ('model', c_char_p, 1), ('partno', c_char_p, 1),
                                               ('version', c_char_p, 1))
 
         # extern int _stdcall TH260_GetSerialNumber(int devidx, char* serial);
-        self._TH260_GetSerialNumber = winfunc('TH260_GetSerialNumber', self._dll, c_int, ('devidx', c_int, 1, 0),
+        self._TH260_GetSerialNumber = winfunc('TH260_GetSerialNumber', _dll, c_int, ('devidx', c_int, 1, 0),
                                               ('serial', c_char_p, 1))
 
         # extern int _stdcall TH260_GetFeatures(int devidx, int* features);
-        self._TH260_GetFeatures = winfunc('TH260_GetFeatures', self._dll, c_int, ('devidx', c_int, 1, 0),
+        self._TH260_GetFeatures = winfunc('TH260_GetFeatures', _dll, c_int, ('devidx', c_int, 1, 0),
                                                 ('features', POINTER(c_int), 1))
 
         # extern int _stdcall TH260_GetBaseResolution(int devidx, double* resolution, int* binsteps);
-        self._TH260_GetBaseResolution = winfunc('TH260_GetBaseResolution', self._dll, c_int,
+        self._TH260_GetBaseResolution = winfunc('TH260_GetBaseResolution', _dll, c_int,
                                                       ('devidx', c_int, 1, 0),
                                                 ('resolution', POINTER(c_double), 1),
                                                 ('binsteps', POINTER(c_int), 1))
 
 
         # extern int _stdcall TH260_GetNumOfInputChannels(int devidx, int* nchannels);
-        self._TH260_GetNumOfInputChannels = winfunc('TH260_GetNumOfInputChannels', self._dll, c_int,
+        self._TH260_GetNumOfInputChannels = winfunc('TH260_GetNumOfInputChannels', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('nchannels', POINTER(c_int), 1, 0))
 
         #
         # extern int _stdcall TH260_SetSyncDiv(int devidx, int div);
-        self._TH260_SetSyncDiv = winfunc('TH260_SetSyncDiv', self._dll, c_int,
+        self._TH260_SetSyncDiv = winfunc('TH260_SetSyncDiv', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('div', c_int, 1))
 
         # extern int _stdcall TH260_SetSyncCFD(int devidx, int level, int zc);         //TH 260 Pico only
-        self._TH260_SetSyncCFD = winfunc('TH260_SetSyncCFD', self._dll, c_int,
+        self._TH260_SetSyncCFD = winfunc('TH260_SetSyncCFD', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('level', c_int, 1),
                                                     ('zc', c_int, 1))
 
         # extern int _stdcall TH260_SetSyncEdgeTrg(int devidx, int level, int edge);   //TH 260 Nano only
-        self._TH260_SetSyncEdgeTrg = winfunc('TH260_SetSyncEdgeTrg', self._dll, c_int,
+        self._TH260_SetSyncEdgeTrg = winfunc('TH260_SetSyncEdgeTrg', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('level', c_int, 1),
                                                     ('edge', c_int, 1))
 
         # extern int _stdcall TH260_SetSyncChannelOffset(int devidx, int value);
-        self._TH260_SetSyncChannelOffset = winfunc('TH260_SetSyncChannelOffset', self._dll, c_int,
+        self._TH260_SetSyncChannelOffset = winfunc('TH260_SetSyncChannelOffset', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('value', c_int, 1))
 
         #
         # extern int _stdcall TH260_SetInputCFD(int devidx, int channel, int level, int zc);       //TH 260 Pico only
-        self._TH260_SetInputCFD = winfunc('TH260_SetInputCFD', self._dll, c_int,
+        self._TH260_SetInputCFD = winfunc('TH260_SetInputCFD', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('channel', c_int, 1),
                                                     ('level', c_int, 1),
                                                     ('zc', c_int, 1))
 
         # extern int _stdcall TH260_SetInputEdgeTrg(int devidx, int channel, int level, int edge); //TH 260 Nano only
-        self._TH260_SetInputEdgeTrg = winfunc('TH260_SetInputEdgeTrg', self._dll, c_int,
+        self._TH260_SetInputEdgeTrg = winfunc('TH260_SetInputEdgeTrg', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('channel', c_int, 1),
                                                     ('level', c_int, 1),
                                                     ('edge', c_int, 1))
 
         # extern int _stdcall TH260_SetInputChannelOffset(int devidx, int channel, int value);
-        self._TH260_SetInputChannelOffset = winfunc('TH260_SetInputChannelOffset', self._dll, c_int,
+        self._TH260_SetInputChannelOffset = winfunc('TH260_SetInputChannelOffset', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('channel', c_int, 1),
                                                     ('value', c_int, 1))
 
         # extern int _stdcall TH260_SetInputChannelEnable(int devidx, int channel, int enable);
-        self._TH260_SetInputChannelEnable = winfunc('TH260_SetInputChannelEnable', self._dll, c_int,
+        self._TH260_SetInputChannelEnable = winfunc('TH260_SetInputChannelEnable', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('channel', c_int, 1),
                                                     ('enable', c_int, 1))
 
         # extern int _stdcall TH260_SetInputDeadTime(int devidx, int channel, int tdcode); //needs TH 260 Pico >= April 2015
-        self._TH260_SetInputDeadTime = winfunc('TH260_SetInputDeadTime', self._dll, c_int,
+        self._TH260_SetInputDeadTime = winfunc('TH260_SetInputDeadTime', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('channel', c_int, 1),
                                                     ('tdcode', c_int, 1))
         #
         # extern int _stdcall TH260_SetTimingMode(int devidx, int mode); //TH 260 Pico only
-        self._TH260_SetTimingMode = winfunc('TH260_SetTimingMode', self._dll, c_int,
+        self._TH260_SetTimingMode = winfunc('TH260_SetTimingMode', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('mode', c_int, 1))
 
         # extern int _stdcall TH260_SetStopOverflow(int devidx, int stop_ovfl, unsigned int stopcount);
-        self._TH260_SetStopOverflow = winfunc('TH260_SetStopOverflow', self._dll, c_int,
+        self._TH260_SetStopOverflow = winfunc('TH260_SetStopOverflow', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('stop_ovfl', c_int, 1),
                                                     ('stopcount', c_uint, 1))
 
         # extern int _stdcall TH260_SetBinning(int devidx, int binning);
-        self._TH260_SetBinning = winfunc('TH260_SetBinning', self._dll, c_int,
+        self._TH260_SetBinning = winfunc('TH260_SetBinning', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('binning', c_int, 1))
         
         # extern int _stdcall TH260_SetOffset(int devidx, int offset);
-        self._TH260_SetOffset = winfunc('TH260_SetOffset', self._dll, c_int,
+        self._TH260_SetOffset = winfunc('TH260_SetOffset', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('offset', c_int, 1))
         
         # extern int _stdcall TH260_SetHistoLen(int devidx, int lencode, int* actuallen);
-        self._TH260_SetHistoLen = winfunc('TH260_SetHistoLen', self._dll, c_int,
+        self._TH260_SetHistoLen = winfunc('TH260_SetHistoLen', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('lencode', c_int, 1),
                                                     ('actuallen', POINTER(c_int), 1))
 
         # extern int _stdcall TH260_SetMeasControl(int devidx, int control, int startedge, int stopedge);
-        self._TH260_SetMeasControl = winfunc('TH260_SetMeasControl', self._dll, c_int,
+        self._TH260_SetMeasControl = winfunc('TH260_SetMeasControl', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('control', c_int, 1),
                                                     ('startedge', c_int, 1),
                                                     ('stopedge', c_int, 1))
 
         # extern int _stdcall TH260_SetTriggerOutput(int devidx, int period);
-        self._TH260_SetTriggerOutput = winfunc('TH260_SetTriggerOutput', self._dll, c_int,
+        self._TH260_SetTriggerOutput = winfunc('TH260_SetTriggerOutput', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('period', c_int, 1))
         #
         # extern int _stdcall TH260_ClearHistMem(int devidx);
-        self._TH260_ClearHistMem = winfunc('TH260_ClearHistMem', self._dll, c_int,
+        self._TH260_ClearHistMem = winfunc('TH260_ClearHistMem', _dll, c_int,
                                                     ('devidx', c_int, 1, 0))
 
         # extern int _stdcall TH260_StartMeas(int devidx, int tacq);
-        self._TH260_StartMeas = winfunc('TH260_StartMeas', self._dll, c_int,
+        self._TH260_StartMeas = winfunc('TH260_StartMeas', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('tacq', c_int, 1))
 
         # extern int _stdcall TH260_StopMeas(int devidx);
-        self._TH260_StopMeas = winfunc('TH260_StopMeas', self._dll, c_int,
+        self._TH260_StopMeas = winfunc('TH260_StopMeas', _dll, c_int,
                                                     ('devidx', c_int, 1, 0))
 
         # extern int _stdcall TH260_CTCStatus(int devidx, int* ctcstatus);
-        self._TH260_CTCStatus = winfunc('TH260_CTCStatus', self._dll, c_int,
+        self._TH260_CTCStatus = winfunc('TH260_CTCStatus', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('ctcstatus', POINTER(c_int), 1))
         #
         # extern int _stdcall TH260_GetHistogram(int devidx, unsigned int *chcount, int channel, int clear);
-        self._TH260_GetHistogram = winfunc('TH260_GetHistogram', self._dll, c_int,
+        self._TH260_GetHistogram = winfunc('TH260_GetHistogram', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('chcount', POINTER(c_uint), 1),
                                                     ('channel', c_int, 1),
                                                     ('clear', c_int, 1))
 
         # extern int _stdcall TH260_GetResolution(int devidx, double* resolution);
-        self._TH260_GetResolution = winfunc('TH260_GetResolution', self._dll, c_int,
+        self._TH260_GetResolution = winfunc('TH260_GetResolution', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('resolution', POINTER(c_double), 1))
 
         # extern int _stdcall TH260_GetSyncRate(int devidx, int* syncrate);
-        self._TH260_GetSyncRate = winfunc('TH260_GetSyncRate', self._dll, c_int,
+        self._TH260_GetSyncRate = winfunc('TH260_GetSyncRate', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('syncrate', POINTER(c_int), 1))
 
         # extern int _stdcall TH260_GetCountRate(int devidx, int channel, int* cntrate);
-        self._TH260_GetCountRate = winfunc('TH260_GetCountRate', self._dll, c_int,
+        self._TH260_GetCountRate = winfunc('TH260_GetCountRate', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('channel', c_int, 1),
                                                     ('cntrate', POINTER(c_int), 1))
 
         # extern int _stdcall TH260_GetFlags(int devidx, int* flags);
-        self._TH260_GetFlags = winfunc('TH260_GetFlags', self._dll, c_int, ('devidx', c_int, 1, 0),
+        self._TH260_GetFlags = winfunc('TH260_GetFlags', _dll, c_int, ('devidx', c_int, 1, 0),
                                                     ('flags', POINTER(c_int), 1))
 
         # extern int _stdcall TH260_GetElapsedMeasTime(int devidx, double* elapsed);
-        self._TH260_GetElapsedMeasTime = winfunc('TH260_GetElapsedMeasTime', self._dll, c_int,
+        self._TH260_GetElapsedMeasTime = winfunc('TH260_GetElapsedMeasTime', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('elapsed', POINTER(c_double), 1))
 
         # extern int _stdcall TH260_GetSyncPeriod(int devidx, double* period);
-        self._TH260_GetSyncPeriod = winfunc('TH260_GetSyncPeriod', self._dll, c_int,
+        self._TH260_GetSyncPeriod = winfunc('TH260_GetSyncPeriod', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('period', POINTER(c_double), 1))
         #
         # extern int _stdcall TH260_GetWarnings(int devidx, int* warnings);
-        self._TH260_GetWarnings = winfunc('TH260_GetWarnings', self._dll, c_int,
+        self._TH260_GetWarnings = winfunc('TH260_GetWarnings', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('warnings', POINTER(c_int), 1))
 
         # extern int _stdcall TH260_GetWarningsText(int devidx, char* text, int warnings);
-        self._TH260_GetWarningsText = winfunc('TH260_GetWarningsText', self._dll, c_int,
+        self._TH260_GetWarningsText = winfunc('TH260_GetWarningsText', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('text', c_char_p, 1),
                                                     ('warnings', c_int, 1))
 
         # extern int _stdcall TH260_GetHardwareDebugInfo(int devidx, char *debuginfo);
-        self._TH260_GetHardwareDebugInfo = winfunc('TH260_GetHardwareDebugInfo', self._dll, c_int,
+        self._TH260_GetHardwareDebugInfo = winfunc('TH260_GetHardwareDebugInfo', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('debuginfo', c_char_p, 1))
         #
         # //for time tagging modes
         # extern int _stdcall TH260_SetMarkerEdges(int devidx, int me1, int me2, int me3, int me4);
-        self._TH260_SetMarkerEdges = winfunc('TH260_SetMarkerEdges', self._dll, c_int,
+        self._TH260_SetMarkerEdges = winfunc('TH260_SetMarkerEdges', _dll, c_int,
                                                      ('devidx', c_int, 1, 0),
                                                      ('me1', c_int, 1, 0),
                                                      ('me2', c_int, 1, 0),
@@ -1112,7 +1114,7 @@ class Th260(object):
                                                      ('me4', c_int, 1, 0))
 
         # extern int _stdcall TH260_SetMarkerEnable(int devidx, int en1, int en2, int en3, int en4);
-        self._TH260_SetMarkerEnable = winfunc('TH260_SetMarkerEnable', self._dll, c_int,
+        self._TH260_SetMarkerEnable = winfunc('TH260_SetMarkerEnable', _dll, c_int,
                                                   ('devidx', c_int, 1, 0),
                                                   ('en1', c_int, 1, 0),
                                                   ('en2', c_int, 1, 0),
@@ -1120,12 +1122,12 @@ class Th260(object):
                                                   ('en4', c_int, 1, 0))
 
         # extern int _stdcall TH260_SetMarkerHoldoffTime(int devidx, int holdofftime);
-        self._TH260_SetMarkerHoldoffTime = winfunc('TH260_SetMarkerHoldoffTime', self._dll, c_int,
+        self._TH260_SetMarkerHoldoffTime = winfunc('TH260_SetMarkerHoldoffTime', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('holdofftime', c_int, 1))
 
         # extern int _stdcall TH260_ReadFiFo(int devidx, unsigned int* buffer, int count, int* nactual);
-        self._TH260_ReadFiFo = winfunc('TH260_ReadFiFo', self._dll, c_int,
+        self._TH260_ReadFiFo = winfunc('TH260_ReadFiFo', _dll, c_int,
                                                     ('devidx', c_int, 1, 0),
                                                     ('buffer', POINTER(c_uint), 1),
                                                     ('count', c_int, 1),

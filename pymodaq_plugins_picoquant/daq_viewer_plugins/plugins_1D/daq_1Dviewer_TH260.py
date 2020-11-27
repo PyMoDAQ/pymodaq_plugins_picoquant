@@ -111,7 +111,7 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
 
     def __init__(self, parent=None, params_state=None):
 
-        super(DAQ_1DViewer_TH260, self).__init__(parent, params_state) #initialize base class with commom attributes and methods
+        super().__init__(parent, params_state) #initialize base class with commom attributes and methods
 
         self.device = None
         self.x_axis = None
@@ -253,7 +253,8 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
             mode = self.settings.child('acquisition', 'acq_type').value()
             if mode == 'Counting':
                 rates = [np.array(rate) for rate in self.get_rates()[1:]]
-                self.data_grabed_signal.emit([DataFromPlugins(name='TH260', data=rates, dim='Data0D')])
+                self.data_grabed_signal.emit([DataFromPlugins(name='TH260', data=rates, dim='Data0D',
+                                                              labels=['CH00', 'CH01'])])
             elif mode == 'Histo':
                 channels_index = [self.channels_enabled[k]['index'] for k in self.channels_enabled.keys() if self.channels_enabled[k]['enabled']]
                 for ind, channel in enumerate(channels_index):
@@ -266,7 +267,8 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
             elif mode == 'T3':
                 self.h5saver.h5_file.flush()
                 self.data_grabed_signal.emit([DataFromPlugins(name='TH260', data=[self.datas], dim='Data1D',
-                                                          external_h5=self.h5saver.h5_file)])
+                                                              external_h5=self.h5saver.h5_file,
+                                                              )])
                 self.general_timer.start()
 
 
@@ -282,7 +284,8 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
             mode = self.settings.child('acquisition', 'acq_type').value()
             if mode == 'Counting':
                 rates = [np.array(rate) for rate in self.get_rates()[1:]]
-                self.data_grabed_signal_temp.emit([DataFromPlugins(name='TH260', data=rates, dim='Data0D')])
+                self.data_grabed_signal_temp.emit([DataFromPlugins(name='TH260', data=rates, dim='Data0D',
+                                                                   labels=['CH00', 'CH01'])])
             elif mode == 'Histo':
                 channels_index = [self.channels_enabled[k]['index'] for k in self.channels_enabled.keys() if self.channels_enabled[k]['enabled']]
                 for ind, channel in enumerate(channels_index):
@@ -507,7 +510,7 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
                 rate = self.controller.TH260_GetCountRate(self.device, ind_channel)
                 vals.append([rate/1000])
             else:
-                vals.append([0])
+                vals.append([0.])
 
         self.emit_rates(vals)
         return vals

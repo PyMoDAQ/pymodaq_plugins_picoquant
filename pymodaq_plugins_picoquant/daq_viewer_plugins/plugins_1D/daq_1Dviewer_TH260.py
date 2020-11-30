@@ -23,15 +23,11 @@ from pymodaq.daq_utils.daq_utils import get_set_local_dir
 
 local_path = get_set_local_dir()
 import tables
-try:
-    from phconvert import pqreader
-except:
-    pass
+from phconvert import pqreader
 
 import time
 import datetime
 from fast_histogram import histogram1d
-
 
 class DAQ_1DViewer_TH260(DAQ_Viewer_base):
     """
@@ -110,7 +106,7 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
 
     def __init__(self, parent=None, params_state=None):
 
-        super(DAQ_1DViewer_TH260, self).__init__(parent, params_state) #initialize base class with commom attributes and methods
+        super().__init__(parent, params_state) #initialize base class with commom attributes and methods
 
         self.device = None
         self.x_axis = None
@@ -252,7 +248,8 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
             mode = self.settings.child('acquisition', 'acq_type').value()
             if mode == 'Counting':
                 rates = [np.array(rate) for rate in self.get_rates()[1:]]
-                self.data_grabed_signal.emit([DataFromPlugins(name='TH260', data=rates, dim='Data0D')])
+                self.data_grabed_signal.emit([DataFromPlugins(name='TH260', data=rates, dim='Data0D',
+                                                              labels=['CH00', 'CH01'])])
             elif mode == 'Histo':
                 channels_index = [self.channels_enabled[k]['index'] for k in self.channels_enabled.keys() if self.channels_enabled[k]['enabled']]
                 for ind, channel in enumerate(channels_index):
@@ -265,7 +262,8 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
             elif mode == 'T3':
                 self.h5saver.h5_file.flush()
                 self.data_grabed_signal.emit([DataFromPlugins(name='TH260', data=[self.datas], dim='Data1D',
-                                                          external_h5=self.h5saver.h5_file)])
+                                                              external_h5=self.h5saver.h5_file,
+                                                              )])
                 self.general_timer.start()
 
 
@@ -281,7 +279,8 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
             mode = self.settings.child('acquisition', 'acq_type').value()
             if mode == 'Counting':
                 rates = [np.array(rate) for rate in self.get_rates()[1:]]
-                self.data_grabed_signal_temp.emit([DataFromPlugins(name='TH260', data=rates, dim='Data0D')])
+                self.data_grabed_signal_temp.emit([DataFromPlugins(name='TH260', data=rates, dim='Data0D',
+                                                                   labels=['CH00', 'CH01'])])
             elif mode == 'Histo':
                 channels_index = [self.channels_enabled[k]['index'] for k in self.channels_enabled.keys() if self.channels_enabled[k]['enabled']]
                 for ind, channel in enumerate(channels_index):
@@ -506,7 +505,7 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
                 rate = self.controller.TH260_GetCountRate(self.device, ind_channel)
                 vals.append([rate/1000])
             else:
-                vals.append([0])
+                vals.append([0.])
 
         self.emit_rates(vals)
         return vals
@@ -756,7 +755,7 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
 
         # #self.h5file = tables.open_file(os.path.join(curr_dir, file+'.h5'), mode='w')
         # h5group = self.h5file.root
-        # h5group._v_attrs['settings'] = customparameter.parameter_to_xml_string(self.settings)
+        # h5group._v_attrs['settings'] = ioxml.parameter_to_xml_string(self.settings)
         # h5group._v_attrs.type = 'detector'
         # h5group._v_attrs['format_name'] = 'timestamps'
         #

@@ -12,9 +12,10 @@ from easydict import EasyDict as edict
 from collections import OrderedDict
 
 from pymodaq.daq_utils.daq_utils import ThreadCommand, getLineInfo, zeros_aligned, get_new_file_name, DataFromPlugins, \
-    Axis
+    Axis, find_dict_in_list_from_key_val
 from pymodaq.daq_utils.h5modules import H5Saver
 from pymodaq.daq_utils.parameter import ioxml
+from pymodaq.daq_utils.parameter import utils as putils
 from enum import IntEnum
 import ctypes
 from pymodaq.daq_viewer.utility_classes import comon_parameters
@@ -35,6 +36,13 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
         --------
         utility_classes.DAQ_Viewer_base
     """
+    channel_settings = [
+        {'title': 'ZeroX (mV):', 'name': 'zerox', 'type': 'int', 'value': -10, 'max': 0, 'min': -40},
+        {'title': 'Level (mV):', 'name': 'level', 'type': 'int', 'value': -150, 'max': 0, 'min': -1200},
+        {'title': 'Offset (ps):', 'name': 'offset', 'type': 'int', 'value': 0, 'max': 99999, 'min': -99999},
+        {'title': 'Deadtime (ns):', 'name': 'deadtime', 'type': 'list', 'value': 24,
+            'values': [24, 44, 66, 88, 112, 135, 160, 180]},
+    ]
 
     params = comon_parameters+[
             {'title': 'Device index:', 'name': 'device', 'type': 'int', 'value': 0, 'max': 3, 'min': 0},
@@ -46,21 +54,11 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
                     {'title': 'Offset (ps):', 'name': 'offset', 'type': 'int', 'value': 30000, 'max': 99999, 'min': -99999},
                     {'title': 'Divider:', 'name': 'divider', 'type': 'list', 'value': 1, 'values': [1, 2, 4, 8]},
                 ]},
-                {'title': 'CH1 Settings:', 'name': 'ch1_settings', 'type': 'group', 'expanded': True, 'children': [
-                    {'title': 'Enabled?:', 'name': 'enabled', 'type': 'bool', 'value': True},
-                    {'title': 'ZeroX (mV):', 'name': 'zerox', 'type': 'int', 'value': -10, 'max': 0, 'min': -40},
-                    {'title': 'Level (mV):', 'name': 'level', 'type': 'int', 'value': -150, 'max': 0, 'min': -1200},
-                    {'title': 'Offset (ps):', 'name': 'offset', 'type': 'int', 'value': 0, 'max': 99999, 'min': -99999},
-                    {'title': 'Deadtime (ns):', 'name': 'deadtime', 'type': 'list', 'value': 24, 'values': [24, 44, 66, 88, 112, 135, 160, 180]},
+                {'title': 'CH1 Settings:', 'name': 'ch1_settings', 'type': 'group', 'expanded': True, 'children':
+                     [{'title': 'Enabled?:', 'name': 'enabled', 'type': 'bool', 'value': True}] + channel_settings},
 
-                ]},
-                {'title': 'CH2 Settings:', 'name': 'ch2_settings', 'type': 'group', 'expanded': True, 'children': [
-                    {'title': 'Enabled?:', 'name': 'enabled', 'type': 'bool', 'value': False},
-                    {'title': 'ZeroX (mV):', 'name': 'zerox', 'type': 'int', 'value': -10, 'max': 0, 'min': -40},
-                    {'title': 'Level (mV):', 'name': 'level', 'type': 'int', 'value': -150, 'max': 0, 'min': -1200},
-                    {'title': 'Offset (ps):', 'name': 'offset', 'type': 'int', 'value': 0, 'max': 99999, 'min': -99999},
-                    {'title': 'Deadtime (ns):', 'name': 'deadtime', 'type': 'list', 'value': 24, 'values': [24, 44, 66, 88, 112, 135, 160, 180]},
-                ]},
+                {'title': 'CH2 Settings:', 'name': 'ch2_settings', 'type': 'group', 'expanded': True, 'children':
+                     [{'title': 'Enabled?:', 'name': 'enabled', 'type': 'bool', 'value': False}] + channel_settings},
              ]},
             {'title': 'Acquisition:', 'name': 'acquisition', 'type': 'group', 'expanded': True, 'children': [
                  {'title': 'Acq. type:', 'name': 'acq_type', 'type': 'list',
@@ -227,15 +225,14 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
             elif param.name() == 'timing_mode':
                 self.set_get_resolution('resolution')
 
-            elif param.parent().name() == 'ch1_settings' or param.parent().name() == 'ch2_settings' or param.parent().name() == 'sync_settings':
+            elif param.name() in putils.iter_children(self.settings.child('line_settings'), []):
                 self.set_sync_channel(param)
 
             elif param.name() == 'offset' and param.parent().name() == 'timings':
                 self.controller.TH260_SetOffset(self.device, param.value())
 
             elif param.name() == 'large_display' and param.value():
-                self.emit_status(ThreadCommand('init_lcd', [dict(labels=['Syn. Rate (kcts/s)',
-                                  'CH1 rate (kcts/s)', 'CH2 Rate (kcts/s)'], Nvals=3, digits=6)]))
+                self.set_lcd()
 
         except Exception as e:
             self.emit_status(ThreadCommand('Update_Status', [getLineInfo() + str(e), 'log']))
@@ -247,11 +244,15 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
         try:
             mode = self.settings.child('acquisition', 'acq_type').value()
             if mode == 'Counting':
-                rates = [np.array(rate) for rate in self.get_rates()[1:]]
+                rates_dict = self.get_rates()
+                rates = [d['rate'] for d in rates_dict if d['channel_rate_name'] != 'syncrate']
+                rates_label = [d['channel_rate_name'] for d in rates_dict if d['channel_rate_name'] != 'syncrate']
                 self.data_grabed_signal.emit([DataFromPlugins(name='TH260', data=rates, dim='Data0D',
-                                                              labels=['CH00', 'CH01'])])
+                                                                   labels=rates_label)])
             elif mode == 'Histo':
-                channels_index = [self.channels_enabled[k]['index'] for k in self.channels_enabled.keys() if self.channels_enabled[k]['enabled']]
+                channels_index = [self.channels_enabled[k]['index'] for k in self.channels_enabled
+                                  if self.channels_enabled[k]['enabled']]
+
                 for ind, channel in enumerate(channels_index):
                     self.controller.TH260_GetHistogram(self.device, self.data_pointers[ind], channel=channel, clear=True)
                 records = np.sum(np.array([np.sum(data) for data in self.datas]))
@@ -278,11 +279,13 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
         try:
             mode = self.settings.child('acquisition', 'acq_type').value()
             if mode == 'Counting':
-                rates = [np.array(rate) for rate in self.get_rates()[1:]]
+                rates_dict = self.get_rates()
+                rates = [d['rate'] for d in rates_dict if d['channel_rate_name'] != 'syncrate']
+                rates_label = [d['channel_rate_name'] for d in rates_dict if d['channel_rate_name'] != 'syncrate']
                 self.data_grabed_signal_temp.emit([DataFromPlugins(name='TH260', data=rates, dim='Data0D',
-                                                                   labels=['CH00', 'CH01'])])
+                                                                   labels=rates_label)])
             elif mode == 'Histo':
-                channels_index = [self.channels_enabled[k]['index'] for k in self.channels_enabled.keys() if self.channels_enabled[k]['enabled']]
+                channels_index = [self.channels_enabled[k]['index'] for k in self.channels_enabled if self.channels_enabled[k]['enabled']]
                 for ind, channel in enumerate(channels_index):
                     self.controller.TH260_GetHistogram(self.device, self.data_pointers[ind], channel=channel, clear=False)
                 records = np.sum(np.array([np.sum(data) for data in self.datas]))
@@ -326,7 +329,7 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
 
         """
         #check enabled channels
-        labels = [k for k in self.channels_enabled.keys() if self.channels_enabled[k]['enabled']]
+        labels = [k for k in self.channels_enabled if self.channels_enabled[k]['enabled']]
         N = len(labels)
 
         if mode != self.actual_mode or update:
@@ -382,7 +385,7 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
         self.controller.TH260_SetInputDeadTime(self.device, 1, code)
 
         self.Nchannels = self.controller.TH260_GetNumOfInputChannels(self.device)
-        if self.Nchannels >= 1:
+        if self.Nchannels == 1:
             self.settings.child('line_settings', 'ch2_settings').hide()
             self.controller.TH260_SetInputChannelEnable(self.device, channel=0,
                                                         enable=self.settings.child('line_settings', 'ch1_settings',
@@ -391,7 +394,7 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
             self.channels_enabled['CH1']['enabled'] = self.settings.child('line_settings', 'ch1_settings',
                                                                           'enabled').value()
 
-        if self.Nchannels >= 2:
+        if self.Nchannels == 2:
             self.settings.child('line_settings', 'ch2_settings').show()
             self.channels_enabled['CH2']['enabled'] = self.settings.child('line_settings', 'ch2_settings',
                                                                           'enabled').value()
@@ -444,8 +447,7 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
 
             self.set_get_resolution(wintype='both')
 
-            self.emit_status(ThreadCommand('init_lcd', [dict(labels=['CH1 rate (kcts/s)', 'CH2 Rate (kcts/s)'], Nvals=2,
-                                                             digits=6)]))
+            self.set_lcd()
 
             self.general_timer.start()  # Timer event fired every 200ms
 
@@ -461,6 +463,13 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
             self.status.info = getLineInfo()+ str(e)
             self.status.initialized = False
             return self.status
+
+    def set_lcd(self):
+        labels = []
+        for chan in self.channels_enabled:
+            if self.channels_enabled[chan]['enabled']:
+                labels.append(f'{chan} rate (kcts/s)')
+        self.emit_status(ThreadCommand('init_lcd', [dict(labels=labels, Nvals=len(labels), digits=6)]))
 
     def poll_acquisition(self):
         """
@@ -499,24 +508,22 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
         vals = []
         sync_rate = self.controller.TH260_GetSyncRate(self.device)
 
-        vals.append([sync_rate/1000])
+        vals.append(dict(channel_rate_name='syncrate', rate=sync_rate/1000))
         for ind_channel in range(self.Nchannels):
-            if self.settings.child('line_settings',  'ch{:d}_settings'.format(ind_channel+1), 'enabled').value():
+            if self.settings.child('line_settings',  f'ch{ind_channel+1}_settings', 'enabled').value():
                 rate = self.controller.TH260_GetCountRate(self.device, ind_channel)
-                vals.append([rate/1000])
-            else:
-                vals.append([0.])
+                vals.append(dict(channel_rate_name=f'ch{ind_channel+1}_rate', rate=rate/1000))
 
         self.emit_rates(vals)
         return vals
 
-    def emit_rates(self,vals):
-        self.settings.child('acquisition', 'rates', 'syncrate').setValue(vals[0][0]*1000)
-        for ind_channel in range(self.Nchannels):
-            self.settings.child('acquisition', 'rates', 'ch{:d}_rate'.format(ind_channel+1)).setValue(vals[ind_channel+1][0]*1000)
-
+    def emit_rates(self, vals):
+        for d in vals:
+            self.settings.child('acquisition', 'rates', d['channel_rate_name']).setValue(d['rate']*1000)
         if self.settings.child('acquisition', 'rates', 'large_display').value():
-            self.emit_status(ThreadCommand('lcd', [vals[1:]]))
+            self.emit_status(ThreadCommand('lcd',
+                                           [[np.array([d['rate']])] for d in vals if
+                                            d['channel_rate_name'] != 'syncrate']))
         return vals
 
     def set_sync_channel(self, param):
@@ -559,6 +566,7 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
             for par in param.parent().children():
                 if par != param:
                     par.setOpts(enabled=param.value())
+            self.set_lcd()
 
         elif param.name() == 'deadtime':
             code = param.opts['limits'].index(param.value())
@@ -622,7 +630,7 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
         self.get_rates()
         warn = self.controller.TH260_GetWarnings(self.device)
         if warn != '':
-            self.emit_status(ThreadCommand('Update_Status', [warn, '']))
+            self.emit_status(ThreadCommand('Update_Status', [warn, False]))
 
 
     def close(self):
@@ -695,7 +703,8 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
             self.acq_done = False
             mode = self.settings.child('acquisition', 'acq_type').value()
             if mode == 'Counting':
-                QThread.msleep(100) #sleeps 100ms otherwise the loop is too fast
+                if 'live' in kwargs:
+                    QThread.msleep(100) #sleeps 100ms otherwise the loop is too fast
                 self.emit_data()
 
             elif mode == 'Histo':
@@ -899,9 +908,11 @@ class T3Reader(QObject):
     def get_rates(self):
         vals = []
         sync_rate = self.controller.TH260_GetSyncRate(self.device)
-        vals.append([sync_rate/1000])
-        for ind_channel in range(self.Nchannels):
-            rate = self.controller.TH260_GetCountRate(self.device, ind_channel)
-            vals.append([rate/1000])
-        return vals
 
+        vals.append(dict(channel_rate_name='syncrate', rate=sync_rate/1000))
+        for ind_channel in range(self.Nchannels):
+            if self.settings.child('line_settings',  f'ch{ind_channel+1}_settings', 'enabled').value():
+                rate = self.controller.TH260_GetCountRate(self.device, ind_channel)
+                vals.append(dict(channel_rate_name=f'ch{ind_channel+1}_rate', rate=rate/1000))
+
+        return vals

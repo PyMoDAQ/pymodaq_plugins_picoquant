@@ -245,7 +245,7 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
             mode = self.settings.child('acquisition', 'acq_type').value()
             if mode == 'Counting':
                 rates_dict = self.get_rates()
-                rates = [d['rate'] for d in rates_dict if d['channel_rate_name'] != 'syncrate']
+                rates = [np.array([d['rate']]) for d in rates_dict if d['channel_rate_name'] != 'syncrate']
                 rates_label = [d['channel_rate_name'] for d in rates_dict if d['channel_rate_name'] != 'syncrate']
                 self.data_grabed_signal.emit([DataFromPlugins(name='TH260', data=rates, dim='Data0D',
                                                                    labels=rates_label)])
@@ -280,7 +280,7 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
             mode = self.settings.child('acquisition', 'acq_type').value()
             if mode == 'Counting':
                 rates_dict = self.get_rates()
-                rates = [d['rate'] for d in rates_dict if d['channel_rate_name'] != 'syncrate']
+                rates = [np.array([d['rate']]) for d in rates_dict if d['channel_rate_name'] != 'syncrate']
                 rates_label = [d['channel_rate_name'] for d in rates_dict if d['channel_rate_name'] != 'syncrate']
                 self.data_grabed_signal_temp.emit([DataFromPlugins(name='TH260', data=rates, dim='Data0D',
                                                                    labels=rates_label)])

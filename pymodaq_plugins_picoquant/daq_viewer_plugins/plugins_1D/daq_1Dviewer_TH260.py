@@ -428,7 +428,7 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
 
             #set timer to update info from controller
             self.general_timer = QTimer()
-            self.general_timer.setInterval(200)
+            self.general_timer.setInterval(500)
             self.general_timer.timeout.connect(self.update_timer)
 
             #set timer to check acquisition state

@@ -724,6 +724,7 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
                 self.emit_data()
 
             elif mode == 'Histo':
+                self.general_timer.stop()
                 time_acq = int(self.settings.child('acquisition', 'acq_time').value()*1000)  # in ms
                 self.controller.TH260_ClearHistMem(self.device)
                 self.controller.TH260_StartMeas(self.device, time_acq)

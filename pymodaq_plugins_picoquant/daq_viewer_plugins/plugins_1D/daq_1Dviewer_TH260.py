@@ -364,6 +364,8 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
             self.actual_mode = mode
 
     def ini_channels(self):
+        self.Nchannels = self.controller.TH260_GetNumOfInputChannels(self.device)
+
         self.controller.TH260_SetSyncDiv(self.device,
                                          self.settings.child('line_settings', 'sync_settings', 'divider').value())
 
@@ -374,28 +376,20 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
         self.controller.TH260_SetSyncChannelOffset(self.device, self.settings.child('line_settings', 'sync_settings',
                                                                                     'offset').value())
 
-        self.controller.TH260_SetInputCFD(self.device, 0,
-                                          self.settings.child('line_settings', 'ch1_settings', 'level').value(),
-                                          self.settings.child('line_settings', 'ch1_settings', 'zerox').value())
-        self.controller.TH260_SetInputCFD(self.device, 1,
-                                          self.settings.child('line_settings', 'ch2_settings', 'level').value(),
-                                          self.settings.child('line_settings', 'ch2_settings', 'zerox').value())
-
-        self.controller.TH260_SetInputChannelOffset(self.device, 0,
-                                          self.settings.child('line_settings', 'ch1_settings', 'offset').value())
-        self.controller.TH260_SetInputChannelOffset(self.device, 1,
-                                          self.settings.child('line_settings', 'ch2_settings', 'offset').value())
-
-        param = self.settings.child('line_settings', 'ch1_settings', 'deadtime')
-        code = param.opts['limits'].index(param.value())
-        self.controller.TH260_SetInputDeadTime(self.device, 0, code)
-        param = self.settings.child('line_settings', 'ch2_settings', 'deadtime')
-        code = param.opts['limits'].index(param.value())
-        self.controller.TH260_SetInputDeadTime(self.device, 1, code)
-
-        self.Nchannels = self.controller.TH260_GetNumOfInputChannels(self.device)
         if self.Nchannels == 1:
             self.settings.child('line_settings', 'ch2_settings').hide()
+
+            self.controller.TH260_SetInputCFD(self.device, 0,
+                                              self.settings.child('line_settings', 'ch1_settings', 'level').value(),
+                                              self.settings.child('line_settings', 'ch1_settings', 'zerox').value())
+            self.controller.TH260_SetInputChannelOffset(self.device, 0,
+                                                        self.settings.child('line_settings', 'ch1_settings',
+                                                                            'offset').value())
+            param = self.settings.child('line_settings', 'ch1_settings', 'deadtime')
+            code = param.opts['limits'].index(param.value())
+            self.controller.TH260_SetInputDeadTime(self.device, 0, code)
+
+
             self.controller.TH260_SetInputChannelEnable(self.device, channel=0,
                                                         enable=self.settings.child('line_settings', 'ch1_settings',
                                                                                    'enabled').value())
@@ -403,7 +397,19 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
             self.channels_enabled['CH1']['enabled'] = self.settings.child('line_settings', 'ch1_settings',
                                                                           'enabled').value()
 
+
         if self.Nchannels == 2:
+            self.controller.TH260_SetInputCFD(self.device, 1,
+                                          self.settings.child('line_settings', 'ch2_settings', 'level').value(),
+                                          self.settings.child('line_settings', 'ch2_settings', 'zerox').value())
+
+            self.controller.TH260_SetInputChannelOffset(self.device, 1,
+                                                        self.settings.child('line_settings', 'ch2_settings',
+                                                                            'offset').value())
+            param = self.settings.child('line_settings', 'ch2_settings', 'deadtime')
+            code = param.opts['limits'].index(param.value())
+            self.controller.TH260_SetInputDeadTime(self.device, 1, code)
+
             self.settings.child('line_settings', 'ch2_settings').show()
             self.channels_enabled['CH2']['enabled'] = self.settings.child('line_settings', 'ch2_settings',
                                                                           'enabled').value()

@@ -46,6 +46,7 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
 
     params = comon_parameters+[
             {'title': 'Device index:', 'name': 'device', 'type': 'int', 'value': 0, 'max': 3, 'min': 0},
+            {'title': 'Get Warnings?:', 'name': 'getwarnings', 'type': 'bool', 'value': False},
             {'title': 'Infos:', 'name': 'infos', 'type': 'str', 'value': "", 'readonly': True},
             {'title': 'Line Settings:', 'name': 'line_settings', 'type': 'group', 'expanded': False, 'children': [
                 {'title': 'Sync Settings:', 'name': 'sync_settings', 'type': 'group', 'expanded': True, 'children': [
@@ -234,6 +235,12 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
             elif param.name() == 'large_display' and param.value():
                 self.set_lcd()
 
+            elif param.name() == 'getwarnings':
+                if param.value():
+                    self.general_timer.start()  #
+                else:
+                    self.general_timer.stop()
+
         except Exception as e:
             self.emit_status(ThreadCommand('Update_Status', [getLineInfo() + str(e), 'log']))
 
@@ -258,14 +265,16 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
                 records = np.sum(np.array([np.sum(data) for data in self.datas]))
                 self.settings.child('acquisition', 'rates', 'records').setValue(records)
                 self.data_grabed_signal.emit([DataFromPlugins(name='TH260', data=self.datas, dim='Data1D',)])
-                self.general_timer.start()
+                if self.settings.child('getwarnings').value():
+                    self.general_timer.start()
 
             elif mode == 'T3':
                 self.h5saver.h5_file.flush()
                 self.data_grabed_signal.emit([DataFromPlugins(name='TH260', data=[self.datas], dim='Data1D',
                                                               external_h5=self.h5saver.h5_file,
                                                               )])
-                self.general_timer.start()
+                if self.settings.child('getwarnings').value():
+                    self.general_timer.start()
 
 
 
@@ -413,14 +422,14 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
         self.status.update(edict(initialized=False,info="",x_axis=None,y_axis=None,controller=None))
         try:
 
-            if self.settings.child(('controller_status')).value()=="Slave":
+            if self.settings.child(('controller_status')).value() == "Slave":
                 if controller is None:
                     raise Exception('no controller has been defined externally while this detector is a slave one')
                 else:
-                    self.controller=controller
+                    self.controller = controller
             else:
                 self.device = self.settings.child(('device')).value()
-                self.settings.child(('device')).setOpts(readonly=True) #not possible to change it once initialized
+                self.settings.child(('device')).setOpts(readonly=True)  # not possible to change it once initialized
                 self.controller = timeharp260.Th260()
 
                 # open device and initialize it
@@ -449,7 +458,8 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
 
             self.set_lcd()
 
-            self.general_timer.start()  # Timer event fired every 200ms
+            if self.settings.child('getwarnings').value():
+                self.general_timer.start()  #
 
             #%%%%%%% init axes from image
             self.x_axis = self.get_xaxis()

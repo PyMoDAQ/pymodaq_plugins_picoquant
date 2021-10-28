@@ -3,8 +3,8 @@ requires:
 fast-histogram : to process histograms in TTTR mode
 """
 
-from PyQt5 import QtWidgets
-from PyQt5.QtCore import QObject, QThread, QTimer, pyqtSignal, pyqtSlot
+from qtpy import QtWidgets
+from qtpy.QtCore import QObject, QThread, QTimer, Signal, Slot
 import os
 import numpy as np
 from pymodaq.daq_viewer.utility_classes import DAQ_Viewer_base
@@ -101,7 +101,7 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
             ]
 
     hardware_averaging = False
-    stop_tttr = pyqtSignal()
+    stop_tttr = Signal()
 
     def __init__(self, parent=None, params_state=None):
 
@@ -504,7 +504,7 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
         self.controller.TH260_StopMeas(self.device)
         self.emit_data()
 
-    @pyqtSlot(int)
+    @Slot(int)
     def set_elapsed_time(self, elapsed_time):
         self.settings.child('acquisition', 'elapsed_time').setValue(elapsed_time/1000)  # in s
 
@@ -809,7 +809,7 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
 
 
 
-    @pyqtSlot(dict)
+    @Slot(dict)
     def populate_h5(self, datas):
         """
 
@@ -872,7 +872,7 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
 
 
 class T3Reader(QObject):
-    data_signal = pyqtSignal(dict)  # dict(data=self.buffer[0:nrecords], rates=rates, elapsed_time=elapsed_time)
+    data_signal = Signal(dict)  # dict(data=self.buffer[0:nrecords], rates=rates, elapsed_time=elapsed_time)
 
     def __init__(self, device, controller, time_acq, Nchannels=2):
         super(T3Reader, self).__init__()

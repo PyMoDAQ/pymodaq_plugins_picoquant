@@ -94,7 +94,7 @@ for ind, index in enumerate(indexes_new_line[:-1]):
 print(time.perf_counter()-t)
 #%%
 if __name__ == '__main__':
-    from PyQt5 import QtWidgets
+    from qtpy import QtWidgets
     import sys
     from pymodaq.daq_utils.plotting.viewerND.viewerND_main import ViewerND
     

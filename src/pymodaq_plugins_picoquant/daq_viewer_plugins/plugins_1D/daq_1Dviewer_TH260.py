@@ -41,7 +41,7 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
         {'title': 'Level (mV):', 'name': 'level', 'type': 'int', 'value': -150, 'max': 0, 'min': -1200},
         {'title': 'Offset (ps):', 'name': 'offset', 'type': 'int', 'value': 0, 'max': 99999, 'min': -99999},
         {'title': 'Deadtime (ns):', 'name': 'deadtime', 'type': 'list', 'value': 24,
-            'values': [24, 44, 66, 88, 112, 135, 160, 180]},
+            'limits': [24, 44, 66, 88, 112, 135, 160, 180]},
     ]
 
     params = comon_parameters+[
@@ -53,7 +53,7 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
                     {'title': 'ZeroX (mV):', 'name': 'zerox', 'type': 'int', 'value': -10, 'max': 0, 'min': -40},
                     {'title': 'Level (mV):', 'name': 'level', 'type': 'int', 'value': -50, 'max': 0, 'min': -1200},
                     {'title': 'Offset (ps):', 'name': 'offset', 'type': 'int', 'value': 30000, 'max': 99999, 'min': -99999},
-                    {'title': 'Divider:', 'name': 'divider', 'type': 'list', 'value': 1, 'values': [1, 2, 4, 8]},
+                    {'title': 'Divider:', 'name': 'divider', 'type': 'list', 'value': 1, 'limits': [1, 2, 4, 8]},
                 ]},
                 {'title': 'CH1 Settings:', 'name': 'ch1_settings', 'type': 'group', 'expanded': True, 'children':
                      [{'title': 'Enabled?:', 'name': 'enabled', 'type': 'bool', 'value': True}] + channel_settings},
@@ -63,7 +63,7 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
              ]},
             {'title': 'Acquisition:', 'name': 'acquisition', 'type': 'group', 'expanded': True, 'children': [
                  {'title': 'Acq. type:', 'name': 'acq_type', 'type': 'list',
-                                'value': 'Histo', 'values': ['Counting', 'Histo', 'T3']},
+                                'value': 'Histo', 'limits': ['Counting', 'Histo', 'T3']},
                  {'title': 'Base path:', 'name': 'base_path', 'type': 'browsepath', 'value': 'E:\Data',
                  'filetype': False, 'readonly': True, 'visible': False },
                  {'title': 'Temp. File:', 'name': 'temp_file', 'type': 'str', 'value': '', 'visible': False},
@@ -74,19 +74,19 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
 
                  {'title': 'Timings:', 'name': 'timings', 'type': 'group', 'expanded': True, 'children': [
                      {'title': 'Mode:', 'name': 'timing_mode', 'type': 'list', 'value': 'Hires',
-                                'values': ['Hires', 'Lowres']},
+                                'limits': ['Hires', 'Lowres']},
                      {'title': 'Base Resolution (ps):', 'name': 'base_resolution', 'type': 'float', 'value': 25,
                                 'min': 0, 'readonly': True},
                      {'title': 'Resolution (ns):', 'name': 'resolution', 'type': 'float', 'value': 0.2, 'min': 0},
                      {'title': 'Time window (s):', 'name': 'window', 'type': 'float', 'value': 100, 'min': 0,
                                     'readonly': True, 'enabled': False, 'siPrefix': True},
                      {'title': 'Nbins:', 'name': 'nbins', 'type': 'list', 'value': 1024,
-                                'values': [1024*(2**lencode) for lencode in range(6)]},
+                                'limits': [1024*(2**lencode) for lencode in range(6)]},
                      {'title': 'Offset (ns):', 'name': 'offset', 'type': 'int', 'value': 0, 'max': 100000000, 'min': 0},
                  ]},
                 {'title': 'FLIM histograms:', 'name': 'flim_histo', 'type': 'group', 'expanded': True, 'children': [
                     {'title': 'FLIM Nbins:', 'name': 'nbins_flim', 'type': 'list', 'value': 512,
-                     'values': [256 * (2 ** lencode) for lencode in range(6)]},
+                     'limits': [256 * (2 ** lencode) for lencode in range(6)]},
                     {'title': 'FLIM Time Window (ns):', 'name': 'time_window_flim', 'type': 'float', 'value': 200,}
                 ]},
                  {'title': 'Rates:', 'name': 'rates', 'type': 'group', 'expanded': True, 'children': [

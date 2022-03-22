@@ -235,11 +235,11 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
             elif param.name() == 'large_display' and param.value():
                 self.set_lcd()
 
-            elif param.name() == 'getwarnings':
-                if param.value():
-                    self.general_timer.start()  #
-                else:
-                    self.general_timer.stop()
+            # elif param.name() == 'getwarnings':
+            #     if param.value():
+            #         self.general_timer.start()  #
+            #     else:
+            #         self.general_timer.stop()
 
         except Exception as e:
             self.emit_status(ThreadCommand('Update_Status', [getLineInfo() + str(e), 'log']))
@@ -644,9 +644,10 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
 
         """
         self.get_rates()
-        warn = self.controller.TH260_GetWarnings(self.device)
-        if warn != '':
-            self.emit_status(ThreadCommand('Update_Status', [warn, False]))
+        if self.settings['getwarnings']:
+            warn = self.controller.TH260_GetWarnings(self.device)
+            if warn != '':
+                self.emit_status(ThreadCommand('Update_Status', [warn, False]))
 
 
     def close(self):

@@ -9,8 +9,8 @@ pymodaq_plugins_picoquant (Picoquant)
    :target: https://pymodaq.readthedocs.io/en/stable/?badge=latest
    :alt: Documentation Status
 
-.. image:: https://github.com/CEMES-CNRS/pymodaq_plugins_picoquant/workflows/Upload%20Python%20Package/badge.svg
-    :target: https://github.com/CEMES-CNRS/pymodaq_plugins_picoquant
+.. image:: https://github.com/PyMoDAQ/pymodaq_plugins_picoquant/workflows/Upload%20Python%20Package/badge.svg
+    :target: https://github.com/PyMoDAQ/pymodaq_plugins_picoquant
 
 PyMoDAQ plugin for Picoquant instruments (TimeHarp260, ...)
 

@@ -7,7 +7,7 @@ from qtpy import QtWidgets
 from qtpy.QtCore import QObject, QThread, QTimer, Signal, Slot
 import os
 import numpy as np
-from pymodaq.daq_viewer.utility_classes import DAQ_Viewer_base, main
+from pymodaq.control_modules.viewer_utility_classes import DAQ_Viewer_base, main
 from easydict import EasyDict as edict
 from collections import OrderedDict
 
@@ -18,7 +18,7 @@ from pymodaq.daq_utils.parameter import ioxml
 from pymodaq.daq_utils.parameter import utils as putils
 from enum import IntEnum
 import ctypes
-from pymodaq.daq_viewer.utility_classes import comon_parameters
+from pymodaq.control_modules.viewer_utility_classes import comon_parameters
 from pymodaq_plugins_picoquant.hardware.picoquant import timeharp260
 from pymodaq.daq_utils.config import get_set_local_dir
 

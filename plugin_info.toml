@@ -13,5 +13,6 @@ license = 'MIT'
 #packages required for your plugin:
 packages-required = ['phconvert',
                      'fast_histogram',
-                     'bitstring']
+                     'bitstring',
+                     'pymodaq>=4.0']
 ##

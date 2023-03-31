@@ -11,16 +11,17 @@ from pymodaq.control_modules.viewer_utility_classes import DAQ_Viewer_base, main
 from easydict import EasyDict as edict
 from collections import OrderedDict
 
-from pymodaq.daq_utils.daq_utils import ThreadCommand, getLineInfo, zeros_aligned, get_new_file_name, DataFromPlugins, \
-    Axis, find_dict_in_list_from_key_val
-from pymodaq.daq_utils.h5modules import H5Saver
-from pymodaq.daq_utils.parameter import ioxml
-from pymodaq.daq_utils.parameter import utils as putils
+from pymodaq.utils.daq_utils import ThreadCommand, getLineInfo, zeros_aligned, get_new_file_name
+from pymodaq.utils.data import DataFromPlugins, Axis
+
+from pymodaq.utils.h5modules.saving import H5Saver
+from pymodaq.utils.parameter import ioxml
+from pymodaq.utils.parameter import utils as putils
 from enum import IntEnum
 import ctypes
 from pymodaq.control_modules.viewer_utility_classes import comon_parameters
 from pymodaq_plugins_picoquant.hardware.picoquant import timeharp260
-from pymodaq.daq_utils.config import get_set_local_dir
+from pymodaq.utils.config import get_set_local_dir
 
 local_path = get_set_local_dir()
 import tables
@@ -29,6 +30,7 @@ from phconvert import pqreader
 import time
 import datetime
 from fast_histogram import histogram1d
+
 
 class DAQ_1DViewer_TH260(DAQ_Viewer_base):
     """
@@ -103,9 +105,9 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
     hardware_averaging = False
     stop_tttr = Signal()
 
-    def __init__(self, parent=None, params_state=None):
+    def ini_attributes(self):
 
-        super().__init__(parent, params_state) #initialize base class with commom attributes and methods
+        self.controller: timeharp260.Th260 = None
 
         self.device = None
         self.x_axis = None
@@ -417,68 +419,53 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
                                                         enable=self.settings.child('line_settings', 'ch2_settings',
                                                                                    'enabled').value())
 
-
-
     def ini_detector(self, controller=None):
         """
             See Also
             --------
             DAQ_utils.ThreadCommand, hardware1D.DAQ_1DViewer_Picoscope.update_pico_settings
         """
-        self.status.update(edict(initialized=False,info="",x_axis=None,y_axis=None,controller=None))
-        try:
+        self.device = self.settings.child('device').value()
+        self.settings.child('device').setOpts(readonly=True)
 
-            if self.settings.child(('controller_status')).value() == "Slave":
-                if controller is None:
-                    raise Exception('no controller has been defined externally while this detector is a slave one')
-                else:
-                    self.controller = controller
-            else:
-                self.device = self.settings.child(('device')).value()
-                self.settings.child(('device')).setOpts(readonly=True)  # not possible to change it once initialized
-                self.controller = timeharp260.Th260()
+        self.controller = self.ini_detector_init(old_controller=controller,
+                                                 new_controller=timeharp260.Th260())
 
-                # open device and initialize it
-                self.controller.TH260_OpenDevice(self.device)
+        if self.settings['controller_status'] == "Master":
+            # open device and initialize it
+            self.controller.TH260_OpenDevice(self.device)
 
-            #set timer to update info from controller
-            self.general_timer = QTimer()
-            self.general_timer.setInterval(500)
-            self.general_timer.timeout.connect(self.update_timer)
+        #set timer to update info from controller
+        self.general_timer = QTimer()
+        self.general_timer.setInterval(500)
+        self.general_timer.timeout.connect(self.update_timer)
 
-            #set timer to check acquisition state
-            self.acq_timer = QTimer()
-            self.acq_timer.setInterval(500)
-            self.acq_timer.timeout.connect(self.check_acquisition)
+        #set timer to check acquisition state
+        self.acq_timer = QTimer()
+        self.acq_timer.setInterval(500)
+        self.acq_timer.timeout.connect(self.check_acquisition)
 
-            #init the device and memory in the selected mode
-            self.set_acq_mode(self.settings.child('acquisition', 'acq_type').value(), update=True)
+        #init the device and memory in the selected mode
+        self.set_acq_mode(self.settings.child('acquisition', 'acq_type').value(), update=True)
 
-            model, partn, version = self.controller.TH260_GetHardwareInfo(self.device)
-            serial = self.controller.TH260_GetSerialNumber(self.device)
-            self.settings.child(('infos')).setValue('serial: {}, model: {}, pn: {}, version: {}'.format(serial, model, partn, version))
+        model, partn, version = self.controller.TH260_GetHardwareInfo(self.device)
+        serial = self.controller.TH260_GetSerialNumber(self.device)
+        self.settings.child(('infos')).setValue('serial: {}, model: {}, pn: {}, version: {}'.format(serial, model, partn, version))
 
-            self.ini_channels()
+        self.ini_channels()
 
-            self.set_get_resolution(wintype='both')
+        self.set_get_resolution(wintype='both')
 
-            self.set_lcd()
+        self.set_lcd()
 
-            if self.settings.child('getwarnings').value():
-                self.general_timer.start()  #
+        if self.settings.child('getwarnings').value():
+            self.general_timer.start()  #
 
-            #%%%%%%% init axes from image
-            self.x_axis = self.get_xaxis()
-            self.status.x_axis = self.x_axis
-            self.status.initialized = True
-            self.status.controller = self.controller
+        #%%%%%%% init axes from image
+        self.x_axis = self.get_xaxis()
+        initialized = True
 
-            return self.status
-
-        except Exception as e:
-            self.status.info = getLineInfo()+ str(e)
-            self.status.initialized = False
-            return self.status
+        return '', initialized
 
     def set_lcd(self):
         labels = []
@@ -774,11 +761,11 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
                                              format_name='timestamps'))
         self.settings.child('acquisition', 'temp_file').setValue(f'{file}.h5')
         self.marker_array = self.h5saver.add_array(self.h5saver.raw_group, 'markers', 'data', data_dimension='1D',
-                                                   array_type=np.int, enlargeable=True)
+                                                   array_type=int, enlargeable=True)
         self.nanotimes_array = self.h5saver.add_array(self.h5saver.raw_group, 'nanotimes', 'data', data_dimension='1D',
-                                                      array_type=np.int, enlargeable=True)
+                                                      array_type=int, enlargeable=True)
         self.timestamp_array = self.h5saver.add_array(self.h5saver.raw_group, 'nanotimes', 'data', data_dimension='1D',
-                                                      array_type=np.int, enlargeable=True)
+                                                      array_type=int, enlargeable=True)
 
         # #self.h5file = tables.open_file(os.path.join(curr_dir, file+'.h5'), mode='w')
         # h5group = self.h5file.root

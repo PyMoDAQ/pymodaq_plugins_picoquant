@@ -8,7 +8,7 @@ from ctypes import c_ushort, c_ulong, c_float
 import os
 from enum import IntEnum
 import platform
-from pymodaq.daq_utils.daq_utils import winfunc, cfunc
+from pymodaq.utils.daq_utils import winfunc, cfunc
 from typing import TypeVar, Iterable, Tuple, List
 from bitstring import BitArray, Bits
 import numpy as np

@@ -8,7 +8,7 @@ from ctypes import c_ushort, c_ulong, c_float
 import os
 from enum import IntEnum
 import platform
-from pymodaq.utils.daq_utils import winfunc, cfunc
+from pymodaq_plugins_picoquant.hardware.utils import winfunc, cfunc
 from typing import TypeVar, Iterable, Tuple, List
 from bitstring import BitArray, Bits
 import numpy as np
@@ -16,6 +16,7 @@ from pathlib import Path
 
 import sys
 is_64bits = sys.maxsize > 2**32
+
 
 class ErrorCodes(IntEnum):
     TH260_ERROR_NONE = 0
@@ -113,9 +114,6 @@ class Th260(object):
     """
     def __init__(self):
         super().__init__()
-
-
-
 
         self.create_prototypes()
         self.histogram_length = 0 #to get/set with self.TH260_SetHistoLen

@@ -3,19 +3,19 @@ Class controlling timeharp 260 hardware. Wrapper based on the C library th260LIB
 """
 import sys
 from ctypes import windll, create_string_buffer, POINTER, byref, pointer
-from ctypes import c_uint, c_int, c_char, c_char_p, c_void_p, c_short, c_long, c_bool, c_double, c_uint64, c_uint32, Array, CFUNCTYPE, WINFUNCTYPE
-from ctypes import c_ushort, c_ulong, c_float
-import os
+from ctypes import c_uint, c_int, c_char_p, c_double, c_uint32
+
 from enum import IntEnum
 import platform
-from pymodaq_plugins_picoquant.hardware.utils import winfunc, cfunc
-from typing import TypeVar, Iterable, Tuple, List
-from bitstring import BitArray, Bits
-import numpy as np
-from pathlib import Path
+from pymodaq_plugins_picoquant.hardware.utils import winfunc
+from pymodaq.utils.daq_utils import is_64bits
+from bitstring import Bits
 
-import sys
-is_64bits = sys.maxsize > 2**32
+
+from pymodaq_plugins_picoquant.utils import Config
+
+
+config = Config()
 
 
 class ErrorCodes(IntEnum):
@@ -95,15 +95,14 @@ def errorstring(value):
     except:
         raise IOError('{}: Unkown error code return'.format(value))
 
-libpath = Path("C:\\Program Files\\PicoQuant\\TimeHarp260-TH260Libv31")
 
 if platform.system() == "Windows":
-    if is_64bits:
+    if is_64bits():
         libname = "th260lib64.dll"
     else:
         libname = "th260lib.dll"
 else:
-    raise OSError('Only supported on windows')
+    raise OSError('Only supported on windows, check with smaract if a linux library exists')
 
 _dll = windll.LoadLibrary(libname)
 

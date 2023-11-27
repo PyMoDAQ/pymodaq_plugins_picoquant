@@ -1,7 +1,7 @@
 import importlib
 from pathlib import Path
+from .. import set_logger
 
-from .. import set_logger, get_module_name
 logger = set_logger('move_plugins', add_to_console=False)
 
 for path in Path(__file__).parent.iterdir():

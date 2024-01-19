@@ -303,8 +303,8 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
             self.emit_status(ThreadCommand('Update_Status', [getLineInfo()+ str(e), 'log']))
 
     def process_histo_from_h5(self, Nx=1, Ny=1, channel=0, marker=65):
-        markers_array = self.h5saver.h5_file.get_node('/markers')
-        nanotimes_array = self.h5saver.h5_file.get_node('/nanotimes')
+        markers_array = self.h5temp.h5_file.get_node('/markers')
+        nanotimes_array = self.h5temp.h5_file.get_node('/nanotimes')
 
         Nbins = self.settings['acquisition', 'timings', 'nbins']
         time_window = Nbins
@@ -623,11 +623,11 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
         #QThread.msleep(1000)
         if self.controller is not None:
             self.controller.TH260_CloseDevice(self.device)
-        if self.h5saver is not None:
-            if self.h5saver.h5_file is not None:
-                if self.h5saver.h5_file.isopen:
-                    self.h5saver.h5_file.flush()
-                    self.h5saver.h5_file.close()
+        if self.h5temp is not None:
+            if self.h5temp.h5_file is not None:
+                if self.h5temp.h5_file.isopen:
+                    self.h5temp.h5_file.flush()
+                    self.h5temp.h5_file.close()
 
     def get_xaxis(self):
         """

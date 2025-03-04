@@ -8,7 +8,7 @@ from ctypes import c_uint, c_int, c_char_p, c_double, c_uint32
 from enum import IntEnum
 import platform
 from pymodaq_plugins_picoquant.hardware.utils import winfunc
-from pymodaq.utils.daq_utils import is_64bits
+from pymodaq_utils.utils import is_64bits
 from bitstring import Bits
 
 

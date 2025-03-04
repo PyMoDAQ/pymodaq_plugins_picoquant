@@ -15,18 +15,18 @@ from pymodaq.control_modules.viewer_utility_classes import DAQ_Viewer_base, main
 from easydict import EasyDict as edict
 from collections import OrderedDict
 
-from pymodaq.utils.daq_utils import ThreadCommand, getLineInfo, zeros_aligned, get_new_file_name
+from pymodaq_utils.utils import ThreadCommand, getLineInfo, zeros_aligned, get_new_file_name
 from pymodaq.utils.data import DataFromPlugins, Axis, DataToExport, DataRaw, DataCalculated
 
-from pymodaq.utils.h5modules.saving import H5Saver
-from pymodaq.utils.parameter import ioxml
-from pymodaq.utils.parameter import utils as putils
-from pymodaq.utils.h5modules.data_saving import DataToExportEnlargeableSaver
+from pymodaq_gui.h5modules.saving import H5Saver
+
+from pymodaq_gui.parameter import utils as putils
+from pymodaq_data.h5modules.data_saving import DataToExportEnlargeableSaver
 from enum import IntEnum
 import ctypes
 from pymodaq.control_modules.viewer_utility_classes import comon_parameters
 from pymodaq_plugins_picoquant.hardware.picoquant import timeharp260
-from pymodaq.utils.config import get_set_local_dir
+from pymodaq_utils.config import get_set_local_dir
 
 local_path = get_set_local_dir()
 import tables

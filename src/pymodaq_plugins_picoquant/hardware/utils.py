@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 
 """
 Created the 04/04/2023
@@ -55,4 +56,6 @@ def cfunc(name, dll, result, *args):
     for arg in args:
         atypes.append(arg[1])
         aflags.append((arg[2], arg[0]) + arg[3:])
+
     return CFUNCTYPE(result, *atypes)((name, dll), tuple(aflags))
+

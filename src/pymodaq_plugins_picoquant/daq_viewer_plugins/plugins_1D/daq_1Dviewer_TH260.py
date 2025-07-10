@@ -35,6 +35,9 @@ from phconvert import pqreader
 import time
 import datetime
 from fast_histogram import histogram1d
+from pymodaq_plugins_picoquant.utils import Config
+
+plugin_config = Config()
 
 
 class DAQ_1DViewer_TH260(DAQ_Viewer_base):
@@ -58,8 +61,10 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
             {'title': 'Line Settings:', 'name': 'line_settings', 'type': 'group', 'expanded': False, 'children': [
                 {'title': 'Sync Settings:', 'name': 'sync_settings', 'type': 'group', 'expanded': True, 'children': [
                     {'title': 'ZeroX (mV):', 'name': 'zerox', 'type': 'int', 'value': -10, 'max': 0, 'min': -40},
-                    {'title': 'Level (mV):', 'name': 'level', 'type': 'int', 'value': -50, 'max': 0, 'min': -1200},
-                    {'title': 'Offset (ps):', 'name': 'offset', 'type': 'int', 'value': 30000, 'max': 99999, 'min': -99999},
+                    {'title': 'Level (mV):', 'name': 'level', 'type': 'int',
+                     'value': plugin_config('sync', 'level'), 'max': 0, 'min': -1200},
+                    {'title': 'Offset (ps):', 'name': 'offset', 'type': 'int',
+                     'value': plugin_config('sync', 'offset'), 'max': 99999, 'min': -99999},
                     {'title': 'Divider:', 'name': 'divider', 'type': 'list', 'value': 1, 'limits': [1, 2, 4, 8]},
                 ]},
                 {'title': 'CH1 Settings:', 'name': 'ch1_settings', 'type': 'group', 'expanded': True, 'children':
@@ -274,7 +279,8 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
             self.controller.TH260_GetHistogram(self.device, self.data_pointers[ind], channel=channel, clear=False)
         records = np.sum(np.array([np.sum(data) for data in self.data]))
         self.settings.child('acquisition', 'rates', 'records').setValue(records)
-        return DataFromPlugins(name='TH260', data=self.data, dim='Data1D', )
+        return DataFromPlugins(name='TH260', data=self.data, dim='Data1D',
+                               axes=[self.x_axis])
 
     def compute_histogram(self, dwa: DataRaw) -> DataCalculated:
         time_of_flight, time_array = np.histogram(dwa.axes[0].get_data(),
@@ -282,7 +288,6 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
                                                   )
         return DataCalculated('TOF', data=[time_of_flight],
                               axes=[Axis('Time', 's', time_array[:-1])])
-
 
     def emit_data_tmp(self):
         """
@@ -598,6 +603,7 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
 
         self.settings.child('acquisition', 'timings', 'window').setValue(Nbins*resolution/1e6)  # in ms
         self.set_acq_mode(self.settings['acquisition', 'acq_type'])
+        self.get_xaxis()
 
     def update_timer(self):
         """
@@ -641,7 +647,7 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
         if self.controller is not None:
             res = self.settings['acquisition', 'timings', 'resolution']
             Nbins = self.settings['acquisition', 'timings', 'nbins']
-            self.x_axis = Axis(data=np.linspace(0, (Nbins-1)*res, Nbins), label='Time', units='ns')
+            self.x_axis = Axis(data=np.linspace(0, (Nbins-1)*res, Nbins) * 1e-9, label='Time', units='s')
         else:
             raise(Exception('Controller not defined'))
         return self.x_axis

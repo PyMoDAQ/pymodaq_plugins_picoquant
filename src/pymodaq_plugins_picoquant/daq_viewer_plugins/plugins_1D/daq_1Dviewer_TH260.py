@@ -429,12 +429,12 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
         self.device = self.settings['device']
         self.settings.child('device').setOpts(readonly=True)
 
-        self.controller = self.ini_detector_init(old_controller=controller,
-                                                 new_controller=timeharp260.Th260())
-
-        if self.settings['controller_status'] == "Master":
+        if self.is_master:
             # open device and initialize it
+            self.controller = timeharp260.Th260()
             self.controller.TH260_OpenDevice(self.device)
+        else:
+            self.controller = controller
 
         #set timer to update info from controller
         self.general_timer = QTimer()

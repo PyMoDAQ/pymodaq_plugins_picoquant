@@ -46,6 +46,8 @@ class DAQ_1DViewer_TH260(DAQ_Viewer_base):
         --------
         utility_classes.DAQ_Viewer_base
     """
+
+    supported_platforms = ('win32',)  # a Windows DLL (th260lib64.dll)
     channel_settings = [
         {'title': 'ZeroX (mV):', 'name': 'zerox', 'type': 'int', 'value': -10, 'max': 0, 'min': -40},
         {'title': 'Level (mV):', 'name': 'level', 'type': 'int', 'value': -150, 'max': 0, 'min': -1200},
